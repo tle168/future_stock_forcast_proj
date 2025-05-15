@@ -516,7 +516,56 @@ if run_analysis and stock_ticker:
                 if not df_with_signals.empty:
                     plot_recommendations(df_with_signals, stock_ticker)
                     st.subheader("Dữ liệu chỉ báo và tín hiệu 10 ngày gần nhất:")
-                    st.dataframe(df_with_signals[['Thời Gian', 'Đóng cửa', 'MA5', 'MA20', 'RSI', 'MACD_line', 'MACD_signal', 'Signal']].sort_values(by='Thời Gian', ascending=False).head(10).set_index('Thời Gian'))
+                    # st.dataframe(df_with_signals[['Thời Gian', 'Đóng cửa', 'MA5', 'MA20', 'RSI', 'MACD_line', 'MACD_signal', 'Signal']].sort_values(by='Thời Gian', ascending=False).head(10).set_index('Thời Gian'))
+                    
+            
+                    # Chuẩn bị DataFrame để hiển thị với Signal đã được map
+                    df_display_signals = df_with_signals[['Thời Gian', 'Đóng cửa', 'MA5', 'MA20', 'RSI', 'MACD_line', 'MACD_signal', 'Signal']].copy()
+                    signal_map = {1: "Mua", -1: "Bán", 0: "Giữ"}
+                    df_display_signals['Tín hiệu'] = df_display_signals['Signal'].map(signal_map)
+                    
+                    # Chọn các cột để hiển thị, bao gồm cột 'Tín hiệu' mới
+                    columns_to_display = ['Thời Gian', 'Đóng cửa', 'MA5', 'MA20', 'RSI', 'MACD_line', 'MACD_signal', 'Tín hiệu']
+                    
+                    # Hàm để áp dụng màu nền cho cả dòng dựa trên cột 'Tín hiệu'
+                    def style_signal_row_background(row):
+                        signal_text = row['Tín hiệu']
+                        bg_color = '' # Màu nền mặc định (trong suốt)
+                        if signal_text == "Mua":
+                            bg_color = '#25A235'  # Xanh lá cây nhạt
+                        elif signal_text == "Bán":
+                            bg_color = '#E64930'  # Đỏ nhạt
+                        
+                        # Trả về một list các style, mỗi style cho một cell trong dòng
+                        # Nếu không có màu đặc biệt, trả về style rỗng để không ghi đè
+                        if bg_color:
+                            return [f'background-color: {bg_color}' for _ in row]
+                        else:
+                            return ['' for _ in row] # Không áp dụng style nền đặc biệt
+
+                    # Hàm để áp dụng màu chữ cho cột 'Tín hiệu'
+                    def style_signal_text_color(signal_text_value):
+                        if signal_text_value == "Mua":
+                            return 'color: white; font-weight: bold;'
+                        elif signal_text_value == "Bán":
+                            return 'color: white; font-weight: bold;'
+                        else: # Giữ
+                            return 'color: white;'
+
+
+                    df_styled = (
+                        df_display_signals[columns_to_display]
+                        .sort_values(by='Thời Gian', ascending=False)
+                        .head(10)
+                        .set_index('Thời Gian')
+                        .style.format({ 
+                            "Đóng cửa": "{:,.0f}", "MA5": "{:,.0f}", "MA20": "{:,.0f}",
+                            "RSI": "{:.2f}", "MACD_line": "{:.2f}", "MACD_signal": "{:.2f}"
+                        })
+                        .apply(style_signal_row_background, axis=1) # Áp dụng màu nền cho dòng
+                        .map(style_signal_text_color, subset=['Tín hiệu']) # Áp dụng màu chữ cho cột 'Tín hiệu'
+                    )
+                    st.dataframe(df_styled)    
                 else:
                     st.warning("Không có dữ liệu để tạo khuyến nghị.")
 
